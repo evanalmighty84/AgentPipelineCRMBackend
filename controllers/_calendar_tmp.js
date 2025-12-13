@@ -2,7 +2,7 @@ const ical = require("node-ical");
 
 /**
  * GET /api/calendar
- * Returns iCloud calendar events as JSON
+ * Returns iCloud calendar events as JSON ok
  */
 exports.getCalendarEvents = async (req, res) => {
     try {
