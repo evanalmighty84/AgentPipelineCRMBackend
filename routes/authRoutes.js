@@ -12,6 +12,11 @@ router.post("/signup", authController.signup);
  */
 router.post("/signin", authController.signin);
 
+router.get("/verify-email/:token", authController.verifyEmail);
+
+
+
+
 /**
  * GET /api/auth/verify-email/:token
  */

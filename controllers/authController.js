@@ -3,15 +3,56 @@ const crypto = require("crypto");
 const db = require("../db/db");
 const sendEmail = require("../utils/sendEmail");
 const { encryptPassword, decryptPassword } = require("../utils/authEncryption");
+const pool = require("../db/db");
+
+const API_BASE_URL =
+    process.env.NODE_ENV === "production"
+        ? "https://agentpipelinecrmbackend-production.up.railway.app"
+        : "http://localhost:5000";
+
+
 
 
 /**
  * POST /api/auth/signup
  */
+function buildVerificationEmail(name, verificationLink) {
+    return `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <div style="background-color: steelblue; padding: 20px; text-align: center; color: white;">
+                <h1 style="margin: 0;">Verify Your Account</h1>
+            </div>
+
+            <div style="padding: 20px;">
+                <p style="font-size: 16px;">Hello ${name},</p>
+                <p style="font-size: 16px;">
+                    Please verify your email by clicking the button below:
+                </p>
+
+                <p style="text-align: center;">
+                    <a href="${verificationLink}"
+                       style="display:inline-block;padding:10px 20px;background:steelblue;color:white;text-decoration:none;border-radius:5px;">
+                        Verify My Email
+                    </a>
+                </p>
+
+                <p style="font-size: 14px; text-align: center;">
+                    Clubhouse Links CRM — Convert customers into sales using A.I.
+                </p>
+            </div>
+
+            <div style="background:#f9f9f9;padding:10px;text-align:center;font-size:12px;color:#666;">
+                If you did not sign up for this account, you can safely ignore this email.
+            </div>
+        </div>
+    `;
+}
+
 exports.signup = async (req, res) => {
     const { name, email, password } = req.body;
 
-    // ✅ PUT IT HERE (early guard)
+
+
     if (!name || !email || !password) {
         return res.status(400).json({
             error: "Name, email, and password are required",
@@ -19,7 +60,6 @@ exports.signup = async (req, res) => {
     }
 
     try {
-        // Check existing user
         const existing = await db.query(
             "SELECT id FROM users WHERE email = $1",
             [email]
@@ -32,28 +72,36 @@ exports.signup = async (req, res) => {
         const encryptedPassword = encryptPassword(password);
         const verificationToken = crypto.randomBytes(32).toString("hex");
 
-        const result = await db.query(
+        await db.query(
             `
-                INSERT INTO users (name, email, password_hash, verification_token)
-                VALUES ($1, $2, $3, $4)
-                    RETURNING id, email
+            INSERT INTO users (name, email, password_hash, verification_token)
+            VALUES ($1, $2, $3, $4)
             `,
             [name, email, encryptedPassword, verificationToken]
         );
 
-        const verificationLink = `${process.env.API_BASE_URL}/api/auth/verify-email/${verificationToken}`;
+        const verificationLink =
+            `${API_BASE_URL}/api/auth/verify-email/${verificationToken}`;
 
-        console.log("📧 Skipping email send (test mode)");
-
-
-        res.status(201).json({
-            message: "Signup successful. Please verify your email."
+        // ✅ FIRE-AND-FORGET EMAIL (NO await)
+        sendEmail(
+            email,
+            "Verify your Clubhouse Links account",
+            buildVerificationEmail(name, verificationLink)
+        ).catch(err => {
+            console.error("Email send failed:", err.message);
         });
+
+        return res.status(201).json({
+            message: "Signup successful! Please check your email to verify.",
+        });
+
     } catch (err) {
         console.error("Signup error:", err);
-        res.status(500).json({ error: "Server error" });
+        return res.status(500).json({ error: "Server error" });
     }
 };
+
 
 
 /**
@@ -117,27 +165,27 @@ exports.verifyEmail = async (req, res) => {
     const { token } = req.params;
 
     try {
-        const result = await db.query(
+        const result = await pool.query(
             `
-            UPDATE users
-            SET verified = true,
-                verification_token = NULL
-            WHERE verification_token = $1
-            RETURNING email
+                UPDATE users
+                SET verified = true,
+                    verification_token = NULL
+                WHERE verification_token = $1
+                    RETURNING id
             `,
             [token]
         );
 
-        if (result.rows.length === 0) {
-            return res.status(400).send("<h2>Invalid or expired link</h2>");
+        if (result.rowCount === 0) {
+            return res.status(400).send("Invalid or expired verification link.");
         }
 
-        res.send(`
-            <h2>Email verified successfully ✅</h2>
-            <p>You may now return to the app and sign in.</p>
-        `);
+        // Redirect to frontend login
+        return res.redirect("/login");
+
     } catch (err) {
         console.error("Verify email error:", err);
-        res.status(500).send("Verification failed");
+        return res.status(500).send("Server error");
     }
 };
+
