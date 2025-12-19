@@ -11,6 +11,8 @@ app.use(express.json());
 app.use('/api/preferences', require('./routes/preferencesRoutes'));
 app.use('/api/relationships', require('./routes/relationshipsRoutes'));
 app.use('/api/calendar', require('./routes/calendarRoutes'));
+app.use('/api/auth', require('./routes/authRoutes'));
+
 
 
 app.get('/', (req, res) => {
