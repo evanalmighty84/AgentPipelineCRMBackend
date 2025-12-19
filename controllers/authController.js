@@ -43,17 +43,8 @@ exports.signup = async (req, res) => {
 
         const verificationLink = `${process.env.API_BASE_URL}/api/auth/verify-email/${verificationToken}`;
 
-        await sendEmail(
-            email,
-            "Verify your Clubhouse Links account",
-            `
-            <h2>Welcome to Clubhouse Links</h2>
-            <p>Please verify your email by clicking below:</p>
-            <a href="${verificationLink}" style="padding:10px 15px;background:steelblue;color:white;text-decoration:none;border-radius:4px;">
-                Verify Email
-            </a>
-            `
-        );
+        console.log("📧 Skipping email send (test mode)");
+
 
         res.status(201).json({
             message: "Signup successful. Please verify your email."
