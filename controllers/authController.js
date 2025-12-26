@@ -179,7 +179,8 @@ exports.verifyEmail = async (req, res) => {
         }
 
         // Redirect to frontend login
-        return res.redirect("/login");
+        return res.redirect("https://agentpipelinecrm.com/signin");
+
 
     } catch (err) {
         console.error("Verify email error:", err);
