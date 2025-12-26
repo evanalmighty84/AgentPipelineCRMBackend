@@ -2,7 +2,7 @@ const axios = require("axios");
 
 const EMAIL_API_BASE =
     process.env.NODE_ENV === "production"
-        ? "https://crm-function-app.herokuapp.com"
+        ? "https://crm-function-app-5d4de511071d.herokuapp.com"
         : "http://localhost:5000";
 
 module.exports = async function sendEmailViaApi(to, subject, html) {
