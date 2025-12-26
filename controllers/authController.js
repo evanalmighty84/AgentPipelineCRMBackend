@@ -34,7 +34,7 @@ function buildVerificationEmail(name, verificationLink) {
                 </p>
 
                 <p style="font-size: 14px; text-align: center;">
-                    Clubhouse Links CRM — Convert customers into sales using A.I.
+                    Agent Pipeline CRM — Convert customers into sales using A.I.
                 </p>
             </div>
 
