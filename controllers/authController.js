@@ -4,15 +4,12 @@ const db = require("../db/db");
 const sendEmail = require("../utils/sendEmail");
 const { encryptPassword, decryptPassword } = require("../utils/authEncryption");
 const pool = require("../db/db");
+const sendEmailViaApi = require("../utils/sendEmailViaApi");
 
 const API_BASE_URL =
     process.env.NODE_ENV === "production"
         ? "https://agentpipelinecrmbackend-production.up.railway.app"
         : "http://localhost:5000";
-
-
-
-
 /**
  * POST /api/auth/signup
  */
@@ -48,10 +45,10 @@ function buildVerificationEmail(name, verificationLink) {
     `;
 }
 
+
+
 exports.signup = async (req, res) => {
     const { name, email, password } = req.body;
-
-
 
     if (!name || !email || !password) {
         return res.status(400).json({
@@ -74,8 +71,8 @@ exports.signup = async (req, res) => {
 
         await db.query(
             `
-            INSERT INTO users (name, email, password_hash, verification_token)
-            VALUES ($1, $2, $3, $4)
+                INSERT INTO users (name, email, password_hash, verification_token)
+                VALUES ($1, $2, $3, $4)
             `,
             [name, email, encryptedPassword, verificationToken]
         );
@@ -83,13 +80,13 @@ exports.signup = async (req, res) => {
         const verificationLink =
             `${API_BASE_URL}/api/auth/verify-email/${verificationToken}`;
 
-        // ✅ FIRE-AND-FORGET EMAIL (NO await)
-        sendEmail(
+        // ✅ FIRE-AND-FORGET EMAIL VIA HEROKU (NO await)
+        sendEmailViaApi(
             email,
             "Verify your Clubhouse Links account",
             buildVerificationEmail(name, verificationLink)
         ).catch(err => {
-            console.error("Email send failed:", err.message);
+            console.error("Email relay failed:", err?.message || err);
         });
 
         return res.status(201).json({
@@ -101,6 +98,7 @@ exports.signup = async (req, res) => {
         return res.status(500).json({ error: "Server error" });
     }
 };
+
 
 
 
